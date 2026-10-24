@@ -45,6 +45,12 @@ export interface RecipeCategory extends SyncedRecord {
 export interface IngredientCategory extends SyncedRecord {
   name: string
   sortOrder: number
+  /**
+   * Basisafdeling (kruiden, boter, olie…): wat je meestal in huis hebt. Bij
+   * "Klaarmaken voor boodschappenlijst" staan die ingrediënten standaard
+   * uitgevinkt. Ontbreekt bij oudere records, wat "geen basis" betekent.
+   */
+  basic?: 0 | 1
 }
 
 /** Een item uit de ingrediëntencatalogus (voert de autocomplete). */
@@ -114,6 +120,31 @@ export interface Shop extends SyncedRecord {
   sortOrder: number
   /** looproute: ingrediëntcategorieën in volgorde. Ontbrekende = nog te plaatsen. */
   categoryOrder: Id[]
+  /** plattegrond; ontbreekt zolang je er geen tekende */
+  layout?: ShopLayout
+}
+
+/** Rechthoek op het rooster van de plattegrond, in hele vakjes. */
+export interface Rect {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+/** Een zone op de plattegrond: een afdeling, de ingang of de kassa. */
+export interface LayoutArea {
+  id: Id
+  kind: 'department' | 'entry' | 'register'
+  /** alleen bij een afdeling */
+  categoryId?: Id
+  rect: Rect
+}
+
+export interface ShopLayout {
+  /** de winkelvloer; overlappende rechthoeken vormen samen één vorm */
+  floor: Rect[]
+  areas: LayoutArea[]
 }
 
 export interface PantryItem extends SyncedRecord {

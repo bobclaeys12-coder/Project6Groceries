@@ -1,6 +1,6 @@
 import { createRecord, deleteRecord, getRecord, listRecords, nextSortOrder, updateRecord } from './repo'
 import { cleanRoute } from '../core/sorting'
-import type { Id, Shop } from '../core/types'
+import type { Id, Shop, ShopLayout } from '../core/types'
 
 /* ------------------------------------------------------------ aanmaken */
 
@@ -73,7 +73,7 @@ export async function moveInRoute(shopId: Id, categoryId: Id, direction: -1 | 1)
 }
 
 /**
- * Haalt afdelingen die niet meer bestaan uit elke looproute. Een ander toestel
+ * Haalt afdelingen die niet meer bestaan uit elke looproute en plattegrond. Een ander toestel
  * kan een afdeling verwijderd hebben terwijl deze winkel daar nog naar
  * verwees; na een sync ruimt dit dat op. Schrijft alleen winkels die echt
  * veranderen, zodat er geen onnodige nieuwe updatedAt's ontstaan.
@@ -81,12 +81,27 @@ export async function moveInRoute(shopId: Id, categoryId: Id, direction: -1 | 1)
 export async function cleanShopRoutes(): Promise<number> {
   const categories = await listRecords('ingredientCategories')
   let changed = 0
+  const known = new Set(categories.map((c) => c.id))
   for (const shop of await listRecords('shops')) {
     const cleaned = cleanRoute(shop, categories)
-    if (cleaned.length !== shop.categoryOrder.length) {
-      await updateRecord('shops', shop.id, { categoryOrder: cleaned })
+    // Afdelingszones van een verdwenen afdeling gaan ook van de plattegrond.
+    const areas = shop.layout?.areas.filter(
+      (a) => a.kind !== 'department' || known.has(a.categoryId ?? ''),
+    )
+    const routeChanged = cleaned.length !== shop.categoryOrder.length
+    const mapChanged = shop.layout !== undefined && areas!.length !== shop.layout.areas.length
+    if (routeChanged || mapChanged) {
+      await updateRecord('shops', shop.id, {
+        categoryOrder: cleaned,
+        ...(mapChanged ? { layout: { ...shop.layout!, areas: areas! } } : {}),
+      })
       changed++
     }
   }
   return changed
+}
+
+/** Bewaart de plattegrond in één keer, zodat hij als geheel synchroniseert. */
+export async function setShopLayout(shopId: Id, layout: ShopLayout): Promise<void> {
+  await updateRecord('shops', shopId, { layout })
 }

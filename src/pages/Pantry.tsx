@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { usePageHeader } from '../components/AppLayout'
 import IngredientPicker from '../components/IngredientPicker'
 import UnitSelect from '../components/UnitSelect'
+import AfdelingSelect from '../components/AfdelingSelect'
 import {
   useGroceryItems,
   useIngredientCatalog,
@@ -17,6 +18,7 @@ import {
   stepPantryItem,
   updatePantryItem,
 } from '../db/pantry'
+import { findCatalogMatch, NO_CATEGORY } from '../core/ingredients'
 import { amountAlreadyOnList, amountToBuy, groupPantry, isBelowTarget } from '../core/pantry'
 import { formatAmount, formatNumber, parseAmount, presentAmount } from '../core/scaling'
 import type { GroceryItem, Id, IngredientCategory, PantryItem, Unit } from '../core/types'
@@ -145,10 +147,8 @@ function AddPantryForm({
   const [currentText, setCurrentText] = useState('')
   const [targetText, setTargetText] = useState('')
   const [unit, setUnit] = useState<Unit>('st')
-  const [categoryId, setCategoryId] = useState<Id>('')
+  const [categoryId, setCategoryId] = useState<Id>(NO_CATEGORY)
   const [error, setError] = useState<string | null>(null)
-
-  const activeCategory = categoryId || categories[0]?.id || ''
 
   const add = async () => {
     if (!name.trim()) return
@@ -159,11 +159,12 @@ function AddPantryForm({
       return
     }
     try {
-      await addPantryItem({ name, ingredientId, categoryId: activeCategory, current, target, unit })
+      await addPantryItem({ name, ingredientId, categoryId, current, target, unit })
       setName('')
       setIngredientId(null)
       setCurrentText('')
       setTargetText('')
+      setCategoryId(NO_CATEGORY)
       setError(null)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Toevoegen is niet gelukt.')
@@ -178,7 +179,12 @@ function AddPantryForm({
         placeholder="Wat wil je in huis hebben?"
         onChange={(value) => {
           setName(value)
-          setIngredientId(null)
+          const match = findCatalogMatch(catalog, value)
+          setIngredientId(match?.id ?? null)
+          if (match) {
+            setCategoryId(match.categoryId)
+            setUnit(match.defaultUnit)
+          }
         }}
         onPick={(picked) => {
           setName(picked.name)
@@ -209,18 +215,7 @@ function AddPantryForm({
           onChange={(event) => setTargetText(event.target.value)}
         />
         <UnitSelect value={unit} onChange={setUnit} />
-        <select
-          className="select"
-          value={activeCategory}
-          aria-label="Afdeling"
-          onChange={(event) => setCategoryId(event.target.value)}
-        >
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
+        <AfdelingSelect value={categoryId} categories={categories} onChange={setCategoryId} />
         <button
           type="button"
           className="btn btn--primary"
@@ -388,18 +383,7 @@ function PantryEditor({
           onChange={(event) => setTargetText(event.target.value)}
         />
         <UnitSelect value={unit} onChange={setUnit} />
-        <select
-          className="select"
-          value={categoryId}
-          aria-label="Afdeling"
-          onChange={(event) => setCategoryId(event.target.value)}
-        >
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
+        <AfdelingSelect value={categoryId} categories={categories} onChange={setCategoryId} />
       </div>
       {error && (
         <p className="small" style={{ color: 'var(--red)', margin: 0 }}>

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   amountAlreadyOnList,
   amountToBuy,
+  findPantryItem,
   groupPantry,
   isBelowTarget,
   pantryAddition,
@@ -167,5 +168,23 @@ describe('groeperen', () => {
     )
     expect(sections.map((s) => s.categoryId)).toEqual(['fruit', 'droog'])
     expect(sections[1]!.items.map((i) => i.name)).toEqual(['Bloem', 'Rijst'])
+  })
+})
+
+describe('voorraad op de boodschappenlijst', () => {
+  const pantryItems = [
+    pantry({ id: 'p-rijst', ingredientId: 'i-rijst', name: 'Rijst', nameLower: 'rijst', target: 3 }),
+    pantry({ id: 'p-zout', ingredientId: null, name: 'Zout', nameLower: 'zout', target: 0 }),
+    pantry({ id: 'p-melk', ingredientId: null, name: 'Melk', nameLower: 'melk', target: 2, deleted: 1 }),
+  ]
+
+  it('vindt het voorraaditem via het ingrediënt, of anders via de naam', () => {
+    expect(findPantryItem({ ingredientId: 'i-rijst', nameLower: 'iets anders' }, pantryItems)?.id).toBe('p-rijst')
+    expect(findPantryItem({ ingredientId: null, nameLower: 'rijst' }, pantryItems)?.id).toBe('p-rijst')
+  })
+
+  it('negeert items zonder streefniveau en verwijderde items', () => {
+    expect(findPantryItem({ ingredientId: null, nameLower: 'zout' }, pantryItems)).toBeUndefined()
+    expect(findPantryItem({ ingredientId: null, nameLower: 'melk' }, pantryItems)).toBeUndefined()
   })
 })

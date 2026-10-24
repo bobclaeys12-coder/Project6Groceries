@@ -13,6 +13,7 @@ import {
   removeFromRoute,
   renameShop,
   setCategoryOrder,
+  setShopLayout,
 } from './shops'
 import { sortGroceryList } from '../core/sorting'
 import { deleteIngredientCategory } from './categories'
@@ -166,5 +167,48 @@ describe('winkels en looproutes', () => {
 
     expect(await order(colruyt.id)).toEqual([WIJN, VLEES, BROOD, FRUIT])
     expect(await order(delhaize.id)).toEqual([FRUIT, BROOD, VLEES, WIJN])
+  })
+})
+
+describe('plattegrond', () => {
+  beforeEach(async () => {
+    if (db.isOpen()) db.close()
+    await db.delete()
+    await initDatabase()
+  })
+
+  const LAYOUT = {
+    floor: [{ x: 0, y: 0, w: 10, h: 8 }],
+    areas: [
+      { id: 'z1', kind: 'department' as const, categoryId: FRUIT, rect: { x: 0, y: 0, w: 2, h: 2 } },
+      { id: 'z2', kind: 'department' as const, categoryId: BROOD, rect: { x: 3, y: 0, w: 2, h: 2 } },
+      { id: 'z3', kind: 'entry' as const, rect: { x: 0, y: 7, w: 1, h: 1 } },
+    ],
+  }
+
+  it('bewaart de plattegrond en laat de looproute met rust', async () => {
+    const shopRecord = (await addShop('Colruyt'))!
+    await setCategoryOrder(shopRecord.id, [FRUIT, BROOD])
+    await setShopLayout(shopRecord.id, LAYOUT)
+    const after = await shop(shopRecord.id)
+    expect(after.layout).toEqual(LAYOUT)
+    expect(after.categoryOrder).toEqual([FRUIT, BROOD])
+  })
+
+  it('een verwijderde afdeling verdwijnt ook van de plattegrond; ingang en kassa blijven', async () => {
+    const shopRecord = (await addShop('Colruyt'))!
+    await setShopLayout(shopRecord.id, LAYOUT)
+    await deleteIngredientCategory(FRUIT, BROOD)
+    expect((await shop(shopRecord.id)).layout!.areas.map((a) => a.id)).toEqual(['z2', 'z3'])
+  })
+
+  it('ruimt na een sync zones op van een afdeling die een ander toestel verwijderde', async () => {
+    const shopRecord = (await addShop('Colruyt'))!
+    await setShopLayout(shopRecord.id, LAYOUT)
+    const fruit = (await db.ingredientCategories.get(FRUIT))!
+    await db.ingredientCategories.put({ ...fruit, deleted: 1 })
+
+    expect(await cleanShopRoutes()).toBe(1)
+    expect((await shop(shopRecord.id)).layout!.areas.map((a) => a.id)).toEqual(['z2', 'z3'])
   })
 })

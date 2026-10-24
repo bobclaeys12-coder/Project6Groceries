@@ -28,6 +28,11 @@ export async function renameCategory(
   await updateRecord(table, id, { name: trimmed })
 }
 
+/** Markeert een afdeling als basis, of haalt die markering weg. */
+export async function setCategoryBasic(id: Id, basic: boolean): Promise<void> {
+  await updateRecord('ingredientCategories', id, { basic: basic ? 1 : 0 })
+}
+
 /* ------------------------------------------------------------ volgorde */
 
 /**
@@ -98,13 +103,22 @@ export async function deleteIngredientCategory(categoryId: Id, moveToId: Id | nu
     await reassignIngredientCategory(categoryId, moveToId)
   }
 
-  // De looproute van elke winkel verliest deze afdeling.
+  // De looproute en de plattegrond van elke winkel verliezen deze afdeling.
   for (const shop of await listRecords('shops')) {
-    if (shop.categoryOrder.includes(categoryId)) {
-      await updateRecord('shops', shop.id, {
-        categoryOrder: shop.categoryOrder.filter((c) => c !== categoryId),
-      })
-    }
+    const inRoute = shop.categoryOrder.includes(categoryId)
+    const onMap = shop.layout?.areas.some((a) => a.categoryId === categoryId) ?? false
+    if (!inRoute && !onMap) continue
+    await updateRecord('shops', shop.id, {
+      categoryOrder: shop.categoryOrder.filter((c) => c !== categoryId),
+      ...(shop.layout && onMap
+        ? {
+            layout: {
+              ...shop.layout,
+              areas: shop.layout.areas.filter((a) => a.categoryId !== categoryId),
+            },
+          }
+        : {}),
+    })
   }
 
   await deleteRecord('ingredientCategories', categoryId)

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   DndContext,
   KeyboardSensor,
@@ -26,6 +26,7 @@ import {
   setCategoryOrder,
 } from '../../db/shops'
 import { cleanRoute, unplacedCategories } from '../../core/sorting'
+import ShopPlan from './ShopPlan'
 import type { Id, IngredientCategory } from '../../core/types'
 
 /**
@@ -37,6 +38,8 @@ export default function ShopRouteEditor() {
   const { shopId } = useParams<{ shopId: string }>()
   const shop = useShop(shopId)
   const categories = useIngredientCategories()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = searchParams.get('tab') === 'plan' ? 'plan' : 'route'
 
   usePageHeader(shop?.name ?? 'Winkel')
 
@@ -96,6 +99,30 @@ export default function ShopRouteEditor() {
 
   return (
     <div className="stack">
+      <div className="row" role="tablist" aria-label="Winkel">
+        {(
+          [
+            ['route', '🚶 Looproute'],
+            ['plan', '🗺️ Plattegrond'],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            className={`btn btn--small ${tab === key ? 'btn--primary' : 'btn--ghost'}`}
+            onClick={() => setSearchParams(key === 'plan' ? { tab: 'plan' } : {}, { replace: true })}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'plan' ? (
+        <ShopPlan shop={shop} categories={categories} />
+      ) : (
+        <>
       <p className="small muted" style={{ margin: 0 }}>
         Zet de afdelingen in de volgorde waarin je door de winkel loopt. Sleep aan ⠿ of
         gebruik de pijltjes.
@@ -179,6 +206,8 @@ export default function ShopRouteEditor() {
             ))}
           </ul>
         </section>
+      )}
+        </>
       )}
     </div>
   )

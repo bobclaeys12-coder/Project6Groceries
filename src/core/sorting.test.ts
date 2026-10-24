@@ -126,6 +126,19 @@ describe('boodschappenlijst sorteren', () => {
     expect(list.sections[0]!.name).toBe('Zonder afdeling')
     expect(list.sections[0]!.items).toHaveLength(1)
   })
+
+  it('zet "Zonder afdeling" helemaal onderaan, na de afdelingen die nog te plaatsen zijn', () => {
+    const list = sortGroceryList(
+      [item('Iets', ''), item('Steak', 'vlees'), item('Prei', 'groenten')],
+      CATEGORIES,
+      shop('Test', ['groenten']),
+    )
+    expect(list.sections.map((s) => [s.name, s.unplaced])).toEqual([
+      ['Groenten', false],
+      ['Vlees', true],
+      ['Zonder afdeling', false],
+    ])
+  })
 })
 
 describe('looproute onderhouden', () => {

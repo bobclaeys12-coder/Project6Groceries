@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom'
 import { usePageHeader } from '../components/AppLayout'
 import IngredientPicker from '../components/IngredientPicker'
 import UnitSelect from '../components/UnitSelect'
+import AfdelingSelect from '../components/AfdelingSelect'
 import { useLocalPreference } from '../hooks/useLocalPreference'
 import {
   useGroceryItems,
   useIngredientCatalog,
   useIngredientCategories,
+  usePantryItems,
   useShops,
 } from '../hooks/useData'
 import {
@@ -19,9 +21,11 @@ import {
   updateGroceryItem,
 } from '../db/grocery'
 import { describeSources } from '../core/grocery'
+import { findCatalogMatch, NO_CATEGORY } from '../core/ingredients'
 import { sortGroceryList } from '../core/sorting'
 import { formatAmount, formatNumber, parseAmount, presentAmount } from '../core/scaling'
-import type { GroceryItem, Id, Unit } from '../core/types'
+import { findPantryItem } from '../core/pantry'
+import type { GroceryItem, Id, IngredientCategory, PantryItem, Unit } from '../core/types'
 
 export default function GroceryList() {
   usePageHeader('Boodschappenlijst')
@@ -30,6 +34,7 @@ export default function GroceryList() {
   const categories = useIngredientCategories()
   const catalog = useIngredientCatalog()
   const shops = useShops()
+  const pantryItems = usePantryItems()
 
   const [shopId, setShopId] = useLocalPreference('selectedShop', '')
   const [editingId, setEditingId] = useState<Id | null>(null)
@@ -39,12 +44,10 @@ export default function GroceryList() {
   const [ingredientId, setIngredientId] = useState<Id | null>(null)
   const [amountText, setAmountText] = useState('')
   const [unit, setUnit] = useState<Unit>('st')
-  const [categoryId, setCategoryId] = useState<Id>('')
+  const [categoryId, setCategoryId] = useState<Id>(NO_CATEGORY)
   const [error, setError] = useState<string | null>(null)
 
   const shop = shops.find((s) => s.id === shopId) ?? null
-  const defaultCategory = categories[0]?.id ?? ''
-  const activeCategory = categoryId || defaultCategory
 
   const sorted = useMemo(
     () => sortGroceryList(items, categories, shop),
@@ -66,11 +69,12 @@ export default function GroceryList() {
       ingredientId,
       amount: parseAmount(amountText),
       unit,
-      categoryId: activeCategory,
+      categoryId,
     })
     setName('')
     setIngredientId(null)
     setAmountText('')
+    setCategoryId(NO_CATEGORY)
   }
 
   return (
@@ -83,7 +87,9 @@ export default function GroceryList() {
             placeholder="Wat heb je nodig?"
             onChange={(value) => {
               setName(value)
-              setIngredientId(null)
+              const match = findCatalogMatch(catalog, value)
+              setIngredientId(match?.id ?? null)
+              if (match) setCategoryId(match.categoryId)
             }}
             onPick={(item) => {
               setName(item.name)
@@ -105,18 +111,7 @@ export default function GroceryList() {
             onChange={(event) => setAmountText(event.target.value)}
           />
           <UnitSelect value={unit} onChange={setUnit} />
-          <select
-            className="select"
-            value={activeCategory}
-            aria-label="Afdeling"
-            onChange={(event) => setCategoryId(event.target.value)}
-          >
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+          <AfdelingSelect value={categoryId} categories={categories} onChange={setCategoryId} />
           <button
             type="button"
             className="btn btn--primary"
@@ -152,13 +147,23 @@ export default function GroceryList() {
             ))}
           </select>
           {shop && (
-            <Link
-              to={`/winkels/${shop.id}`}
-              className="btn btn--small btn--ghost"
-              style={{ whiteSpace: 'nowrap' }}
-            >
-              Route
-            </Link>
+            <>
+              <Link
+                to={`/winkels/${shop.id}`}
+                className="btn btn--small btn--ghost"
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                Route
+              </Link>
+              <Link
+                to={`/winkels/${shop.id}?tab=plan`}
+                className="btn btn--small btn--ghost"
+                style={{ whiteSpace: 'nowrap' }}
+                aria-label={`Plattegrond van ${shop.name}`}
+              >
+                🗺️ Plan
+              </Link>
+            </>
           )}
         </div>
       )}
@@ -205,6 +210,7 @@ export default function GroceryList() {
                   <GroceryRow
                     key={item.id}
                     item={item}
+                    stock={findPantryItem(item, pantryItems)}
                     categories={categories}
                     editing={editingId === item.id}
                     onEdit={() => setEditingId(editingId === item.id ? null : item.id)}
@@ -227,6 +233,7 @@ export default function GroceryList() {
                   <GroceryRow
                     key={item.id}
                     item={item}
+                    stock={findPantryItem(item, pantryItems)}
                     categories={categories}
                     editing={editingId === item.id}
                     onEdit={() => setEditingId(editingId === item.id ? null : item.id)}
@@ -260,13 +267,15 @@ export default function GroceryList() {
 
 interface RowProps {
   item: GroceryItem
-  categories: { id: Id; name: string }[]
+  categories: IngredientCategory[]
   editing: boolean
   onEdit: () => void
   onDoneEditing: () => void
+  /** voorraaditem met een streefniveau, als dit item er een heeft */
+  stock?: PantryItem | undefined
 }
 
-function GroceryRow({ item, categories, editing, onEdit, onDoneEditing }: RowProps) {
+function GroceryRow({ item, categories, editing, onEdit, onDoneEditing, stock }: RowProps) {
   const shown = presentAmount(item.amount, item.unit)
   const sourceText = describeSources(item.sources)
 
@@ -286,7 +295,11 @@ function GroceryRow({ item, categories, editing, onEdit, onDoneEditing }: RowPro
   }
 
   return (
-    <li className={item.checked === 1 ? 'is-checked' : ''}>
+    <li
+      className={[item.checked === 1 ? 'is-checked' : '', stock ? 'is-stocked' : '']
+        .filter(Boolean)
+        .join(' ')}
+    >
       <div className="grocery-item">
         <button
           type="button"
@@ -307,6 +320,11 @@ function GroceryRow({ item, categories, editing, onEdit, onDoneEditing }: RowPro
             )}
             <span>{item.name}</span>
           </div>
+          {stock && (
+            <div className="list-item__sub grocery-item__stock">
+              🧺 thuis: {formatAmount(stock.current, stock.unit)} van {formatAmount(stock.target, stock.unit)}
+            </div>
+          )}
           {sourceText && <div className="list-item__sub">{sourceText}</div>}
         </div>
 
@@ -334,18 +352,7 @@ function GroceryRow({ item, categories, editing, onEdit, onDoneEditing }: RowPro
               onChange={(event) => setAmountText(event.target.value)}
             />
             <UnitSelect value={unit} onChange={setUnit} />
-            <select
-              className="select"
-              value={categoryId}
-              aria-label="Afdeling"
-              onChange={(event) => setCategoryId(event.target.value)}
-            >
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+            <AfdelingSelect value={categoryId} categories={categories} onChange={setCategoryId} />
           </div>
           <div className="row row--wrap">
             <button type="button" className="btn btn--small btn--primary" onClick={save}>

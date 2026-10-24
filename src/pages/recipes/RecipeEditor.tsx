@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { usePageHeader } from '../../components/AppLayout'
 import IngredientPicker from '../../components/IngredientPicker'
 import UnitSelect from '../../components/UnitSelect'
+import AfdelingSelect from '../../components/AfdelingSelect'
 import { useObjectUrl } from '../../hooks/useObjectUrl'
 import {
   useIngredientCatalog,
@@ -12,6 +13,7 @@ import {
 } from '../../hooks/useData'
 import { deleteRecipe, saveRecipe } from '../../db/recipes'
 import { newId } from '../../core/ids'
+import { findCatalogMatch, NO_CATEGORY } from '../../core/ingredients'
 import { BASE_PORTIONS, formatNumber, parseAmount } from '../../core/scaling'
 import { downscaleImage, formatFileSize } from '../../core/photo'
 import type { CatalogIngredient, Id, Unit } from '../../core/types'
@@ -62,7 +64,6 @@ export default function RecipeEditor() {
   const fileInput = useRef<HTMLInputElement>(null)
 
   const photoUrl = useObjectUrl(photo)
-  const defaultIngredientCategory = ingredientCategories[0]?.id ?? ''
 
   // Bestaand recept in het formulier zetten, precies één keer.
   useEffect(() => {
@@ -94,9 +95,9 @@ export default function RecipeEditor() {
   }, [isNew, recipeCategories, categoryId, searchParams])
 
   useEffect(() => {
-    if (!isNew || lines.length > 0 || !defaultIngredientCategory) return
-    setLines([emptyLine(defaultIngredientCategory)])
-  }, [isNew, lines.length, defaultIngredientCategory])
+    if (!isNew || lines.length > 0) return
+    setLines([emptyLine(NO_CATEGORY)])
+  }, [isNew, lines.length])
 
   const updateLine = (lineId: string, changes: Partial<EditorLine>) => {
     setLines((current) =>
@@ -306,24 +307,26 @@ export default function RecipeEditor() {
                 <IngredientPicker
                   value={line.name}
                   catalog={catalog}
-                  onChange={(value) =>
-                    updateLine(line.lineId, { name: value, ingredientId: null })
-                  }
+                  onChange={(value) => {
+                    // Volledig uitgetypt in plaats van aangetikt? Dan kent de
+                    // catalogus de afdeling ook.
+                    const match = findCatalogMatch(catalog, value)
+                    updateLine(
+                      line.lineId,
+                      match
+                        ? { name: value, ingredientId: match.id, categoryId: match.categoryId }
+                        : { name: value, ingredientId: null },
+                    )
+                  }}
                   onPick={(item) => pickIngredient(line.lineId, item)}
                 />
               </div>
-              <select
-                className="select editor-row__category"
+              <AfdelingSelect
+                className="editor-row__category"
                 value={line.categoryId}
-                aria-label="Afdeling"
-                onChange={(event) => updateLine(line.lineId, { categoryId: event.target.value })}
-              >
-                {ingredientCategories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+                categories={ingredientCategories}
+                onChange={(categoryId) => updateLine(line.lineId, { categoryId })}
+              />
               <div className="row editor-row__remove">
                 <button
                   type="button"
@@ -362,7 +365,7 @@ export default function RecipeEditor() {
       <button
         type="button"
         className="btn"
-        onClick={() => setLines((current) => [...current, emptyLine(defaultIngredientCategory)])}
+        onClick={() => setLines((current) => [...current, emptyLine(NO_CATEGORY)])}
       >
         ＋ Ingrediënt toevoegen
       </button>

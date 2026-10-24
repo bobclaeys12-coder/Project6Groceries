@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { usePageHeader } from '../../components/AppLayout'
 import { useObjectUrl } from '../../hooks/useObjectUrl'
-import { addRecipeToGroceryList } from '../../db/grocery'
+import PrepareForList from './PrepareForList'
 import { useRecipe, useRecipeCategories } from '../../hooks/useData'
 import {
   BASE_PORTIONS,
@@ -20,7 +20,8 @@ export default function RecipeDetail() {
   const categories = useRecipeCategories()
   const [portions, setPortions] = useState(BASE_PORTIONS)
   const [addResult, setAddResult] = useState<{ added: number; merged: number } | null>(null)
-  const [adding, setAdding] = useState(false)
+  // Pas na "Klaarmaken" kun je iets op de lijst zetten.
+  const [preparing, setPreparing] = useState(false)
 
   usePageHeader(recipe?.name ?? 'Recept')
   const photoUrl = useObjectUrl(recipe?.photo)
@@ -49,15 +50,6 @@ export default function RecipeDetail() {
   }
 
   const categoryName = categories.find((c) => c.id === recipe.categoryId)?.name
-
-  const addToList = async () => {
-    setAdding(true)
-    try {
-      setAddResult(await addRecipeToGroceryList(recipe, portions))
-    } finally {
-      setAdding(false)
-    }
-  }
 
   return (
     <div className="stack">
@@ -114,14 +106,19 @@ export default function RecipeDetail() {
         </div>
       </div>
 
-      <button
-        type="button"
-        className="btn btn--primary btn--block"
-        onClick={addToList}
-        disabled={adding || recipe.ingredients.length === 0}
-      >
-        🛒 Zet op boodschappenlijst ({portions} {portions === 1 ? 'persoon' : 'personen'})
-      </button>
+      {!preparing && (
+        <button
+          type="button"
+          className="btn btn--primary btn--block"
+          onClick={() => {
+            setAddResult(null)
+            setPreparing(true)
+          }}
+          disabled={recipe.ingredients.length === 0}
+        >
+          📝 Klaarmaken voor boodschappenlijst
+        </button>
+      )}
 
       {addResult && (
         <div className="notice notice--ok">
@@ -146,6 +143,19 @@ export default function RecipeDetail() {
       )}
 
       <h2 className="section-title">Ingrediënten</h2>
+      {preparing ? (
+        <PrepareForList
+          recipe={recipe}
+          portions={portions}
+          scaled={scaled}
+          onSent={(result) => {
+            setAddResult(result)
+            setPreparing(false)
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          }}
+          onCancel={() => setPreparing(false)}
+        />
+      ) : (
       <ul className="list">
         {scaled.map((line) => (
           <li key={line.lineId}>
@@ -161,6 +171,7 @@ export default function RecipeDetail() {
           </li>
         ))}
       </ul>
+      )}
       <p className="tiny muted">
         Ingevoerd voor {recipe.basePortions} personen; hoeveelheden schalen mee en worden
         afgerond op iets wat je kunt afwegen.

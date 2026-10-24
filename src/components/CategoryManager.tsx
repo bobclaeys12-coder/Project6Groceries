@@ -8,6 +8,7 @@ import {
   deleteRecipeCategory,
   moveCategory,
   renameCategory,
+  setCategoryBasic,
 } from '../db/categories'
 import type { Id } from '../core/types'
 
@@ -17,6 +18,7 @@ interface Category {
   id: Id
   name: string
   sortOrder: number
+  basic?: 0 | 1
 }
 
 interface Props {
@@ -151,6 +153,17 @@ export default function CategoryManager({ kind, categories, hint }: Props) {
                 <div className="list-item__body">
                   <div className="list-item__title">{category.name}</div>
                 </div>
+                {kind === 'ingredient' && (
+                  <button
+                    type="button"
+                    className={`btn btn--small ${category.basic === 1 ? 'btn--primary' : 'btn--ghost'}`}
+                    onClick={() => void setCategoryBasic(category.id, category.basic !== 1)}
+                    aria-pressed={category.basic === 1}
+                    title="Basis: bij Klaarmaken voor de boodschappenlijst standaard uitgevinkt"
+                  >
+                    Basis
+                  </button>
+                )}
                 <button
                   type="button"
                   className="btn btn--small btn--ghost btn--icon"

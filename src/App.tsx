@@ -8,7 +8,6 @@ import RecipeDetail from './pages/recipes/RecipeDetail'
 import RecipeEditor from './pages/recipes/RecipeEditor'
 import GroceryList from './pages/GroceryList'
 import ShopList from './pages/shops/ShopList'
-import ShopRouteEditor from './pages/shops/ShopRouteEditor'
 import Pantry from './pages/Pantry'
 import Settings from './pages/Settings'
 import NotFound from './pages/NotFound'
@@ -17,6 +16,8 @@ import NotFound from './pages/NotFound'
 // pagina opent, zodat de rest van de app sneller start. De service worker
 // bewaart ze toch, dus offline openen blijft werken.
 const Sync = lazy(() => import('./pages/Sync'))
+// Idem voor de winkelpagina: slepen en de plattegrond hoeven niet bij het opstarten.
+const ShopRouteEditor = lazy(() => import('./pages/shops/ShopRouteEditor'))
 
 /**
  * HashRouter in plaats van BrowserRouter: op GitHub Pages staat de app onder
@@ -37,7 +38,14 @@ export default function App() {
           <Route path="/recept/:id/bewerken" element={<RecipeEditor />} />
           <Route path="/lijst" element={<GroceryList />} />
           <Route path="/winkels" element={<ShopList />} />
-          <Route path="/winkels/:shopId" element={<ShopRouteEditor />} />
+          <Route
+            path="/winkels/:shopId"
+            element={
+              <Suspense fallback={<p className="small muted">Laden…</p>}>
+                <ShopRouteEditor />
+              </Suspense>
+            }
+          />
           <Route path="/voorraad" element={<Pantry />} />
           <Route
             path="/sync"

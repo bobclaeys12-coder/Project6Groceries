@@ -125,3 +125,20 @@ export function groupPantry(
       return orderA !== orderB ? orderA - orderB : a.name.localeCompare(b.name)
     })
 }
+
+/**
+ * Het voorraaditem dat bij een regel op de boodschappenlijst hoort, maar
+ * alleen als je er een streefniveau voor hebt. Zo zie je in de winkel meteen
+ * hoeveel je er thuis nog van hebt. Een id-match gaat voor op een naam-match.
+ */
+export function findPantryItem(
+  line: Pick<GroceryItem, 'ingredientId' | 'nameLower'>,
+  pantryItems: PantryItem[],
+): PantryItem | undefined {
+  const tracked = pantryItems.filter((item) => item.deleted === 0 && item.target > 0)
+  if (line.ingredientId) {
+    const byId = tracked.find((item) => item.ingredientId === line.ingredientId)
+    if (byId) return byId
+  }
+  return tracked.find((item) => item.nameLower === line.nameLower)
+}

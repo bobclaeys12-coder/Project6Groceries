@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { usePageHeader } from '../components/AppLayout'
 import CategoryManager from '../components/CategoryManager'
+import IngredientManager from '../components/IngredientManager'
 import {
   useIngredientCatalog,
   useIngredientCategories,
@@ -11,7 +12,7 @@ import { deviceName, setDeviceName } from '../db/device'
 import { resetDatabase } from '../db/init'
 import { SCHEMA_VERSION } from '../core/types'
 
-type Tab = 'afdelingen' | 'receptcategorieen' | 'gegevens'
+type Tab = 'afdelingen' | 'ingredienten' | 'receptcategorieen' | 'gegevens'
 
 export default function Settings() {
   usePageHeader('Instellingen')
@@ -54,6 +55,7 @@ export default function Settings() {
         {(
           [
             ['afdelingen', 'Afdelingen'],
+            ['ingredienten', 'Ingrediënten'],
             ['receptcategorieen', 'Receptcategorieën'],
             ['gegevens', 'Gegevens'],
           ] as [Tab, string][]
@@ -75,8 +77,12 @@ export default function Settings() {
         <CategoryManager
           kind="ingredient"
           categories={ingredientCategories}
-          hint="De afdelingen van de winkel. De volgorde hier geldt als standaard; per winkel kun je een eigen looproute instellen."
+          hint="De afdelingen van de winkel. De volgorde hier geldt als standaard; per winkel kun je een eigen looproute instellen. Zet 'Basis' aan voor afdelingen die je meestal in huis hebt (kruiden, olie, …): die ingrediënten staan bij Klaarmaken voor de boodschappenlijst standaard uitgevinkt."
         />
+      )}
+
+      {tab === 'ingredienten' && (
+        <IngredientManager ingredients={ingredients} categories={ingredientCategories} />
       )}
 
       {tab === 'receptcategorieen' && (

@@ -1,7 +1,7 @@
-import { db } from './db'
 import { createRecord, deleteRecord, getRecord, listRecords, updateRecord } from './repo'
+import { bumpIngredientUsage, ensureCatalogIngredient } from './ingredients'
 import { newId, normalizeName } from '../core/ids'
-import type { CatalogIngredient, Id, Recipe, RecipeIngredient, Unit } from '../core/types'
+import type { Id, Recipe, RecipeIngredient } from '../core/types'
 import { BASE_PORTIONS } from '../core/scaling'
 
 export interface RecipeDraft {
@@ -37,52 +37,6 @@ export function newIngredientLine(categoryId: Id): RecipeIngredient {
 }
 
 /**
- * Zoekt een ingrediënt in de catalogus op naam, of maakt het aan.
- *
- * Een eerder verwijderd ingrediënt wordt weer tot leven gewekt in plaats van
- * gedupliceerd: als je het opnieuw intypt, wil je het duidelijk terug.
- */
-export async function ensureCatalogIngredient(
-  name: string,
-  categoryId: Id,
-  defaultUnit: Unit,
-): Promise<CatalogIngredient> {
-  const trimmed = name.trim()
-  const lower = normalizeName(trimmed)
-
-  // Ook tombstones meenemen, vandaar de ruwe tabel in plaats van listRecords.
-  const existing = await db.ingredients.where('nameLower').equals(lower).first()
-
-  if (existing) {
-    if (existing.deleted === 1) {
-      const revived = await updateRecord('ingredients', existing.id, {
-        deleted: 0,
-        categoryId,
-        name: trimmed,
-      })
-      return revived ?? existing
-    }
-    return existing
-  }
-
-  return createRecord('ingredients', {
-    name: trimmed,
-    nameLower: lower,
-    categoryId,
-    defaultUnit,
-    usageCount: 0,
-    isSeed: 0,
-  })
-}
-
-/** Houdt bij wat je vaak gebruikt, zodat de suggesties beter worden. */
-export async function bumpIngredientUsage(ingredientId: Id): Promise<void> {
-  const ingredient = await getRecord('ingredients', ingredientId)
-  if (!ingredient) return
-  await updateRecord('ingredients', ingredientId, { usageCount: ingredient.usageCount + 1 })
-}
-
-/**
  * Bewaart een recept en zorgt ondertussen dat elk gebruikt ingrediënt in de
  * catalogus staat. Zo groeit de autocomplete mee met wat je echt kookt.
  */
@@ -100,7 +54,8 @@ export async function saveRecipe(draft: RecipeDraft): Promise<Recipe> {
       ...line,
       name,
       ingredientId: catalogItem.id,
-      categoryId: line.categoryId,
+      // Geen afdeling gekozen? Dan die uit de catalogus, als die er een kent.
+      categoryId: line.categoryId || catalogItem.categoryId,
     })
   }
 

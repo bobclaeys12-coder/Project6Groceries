@@ -3,6 +3,9 @@ import { normalizeName } from '../core/ids'
 import { planGroceryAdditions } from '../core/grocery'
 import type { GroceryAddition } from '../core/grocery'
 import { scaleIngredients } from '../core/scaling'
+import { buildPrepAdditions } from '../core/prep'
+import type { PrepChoice, PrepExtra } from '../core/prep'
+import { ensureCatalogIngredient } from './ingredients'
 import type { GroceryItem, Id, Recipe, Unit } from '../core/types'
 
 export interface AddResult {
@@ -69,13 +72,49 @@ export async function addRecipeToGroceryList(
   return addToGroceryList(additions)
 }
 
-export async function addManualGroceryItem(input: {
+/**
+ * Koppelt een zelf ingetypt item aan de catalogus, zodat het in Instellingen
+ * → Ingrediënten verschijnt en de volgende keer zijn afdeling al kent. Zonder
+ * gekozen afdeling neemt het die van de catalogus over.
+ */
+async function linkToCatalog<T extends { name: string; ingredientId: Id | null; unit: Unit; categoryId: Id }>(
+  input: T,
+): Promise<T> {
+  const catalogItem = await ensureCatalogIngredient(input.name, input.categoryId, input.unit)
+  return {
+    ...input,
+    ingredientId: input.ingredientId ?? catalogItem.id,
+    categoryId: input.categoryId || catalogItem.categoryId,
+  }
+}
+
+/**
+ * Zet een klaargemaakt recept op de lijst: alleen de aangevinkte regels, met
+ * de aangepaste hoeveelheden, plus de extra ingrediënten. Het recept zelf
+ * blijft onaangeroerd.
+ */
+export async function addPreparedRecipeToGroceryList(
+  recipe: Recipe,
+  portions: number,
+  choices: Record<string, PrepChoice>,
+  extras: PrepExtra[],
+): Promise<AddResult> {
+  const linkedExtras: PrepExtra[] = []
+  for (const extra of extras) {
+    if (extra.name.trim()) linkedExtras.push(await linkToCatalog({ ...extra, name: extra.name.trim() }))
+  }
+  return addToGroceryList(buildPrepAdditions(recipe, portions, choices, linkedExtras, Date.now()))
+}
+
+export async function addManualGroceryItem(raw: {
   name: string
   ingredientId: Id | null
   amount: number | null
   unit: Unit
   categoryId: Id
 }): Promise<AddResult> {
+  if (!raw.name.trim()) return { added: 0, merged: 0 }
+  const input = await linkToCatalog({ ...raw, name: raw.name.trim() })
   return addToGroceryList([
     {
       name: input.name,

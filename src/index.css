@@ -8,6 +8,8 @@
   --amber-soft: #fef3c7;
   --red: #c62828;
   --red-soft: #fdecea;
+  --blue: #1d4ed8;
+  --blue-soft: #e8effc;
 
   --bg: #faf8f5;
   --surface: #ffffff;
@@ -1229,4 +1231,130 @@ button.list-item {
 .sync-progress progress {
   width: 100%;
   accent-color: var(--green);
+}
+
+/* ------------------------------------------- voorraaditem op de lijst */
+
+/* Iets wat je normaal in huis houdt: eigen kleur, zodat je in de winkel
+   ziet dat het om aanvullen gaat en niet om iets voor een recept. */
+.list > li.is-stocked {
+  background: var(--blue-soft);
+  box-shadow: inset 4px 0 0 var(--blue);
+}
+
+.list > li.is-stocked.is-checked {
+  background: none;
+  box-shadow: none;
+}
+
+.grocery-item__stock {
+  color: var(--blue);
+  font-weight: 500;
+}
+
+/* ------------------------------------------------- klaarmaken voor lijst */
+
+.prep__row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.75rem;
+  min-height: var(--tap);
+  cursor: pointer;
+}
+
+.prep__check {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  accent-color: var(--green);
+}
+
+.prep__amount {
+  flex: none;
+  width: 4.5rem;
+  text-align: right;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.prep__unit {
+  flex: none;
+  min-width: 1.6rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.prep__name {
+  flex: 1;
+  min-width: 0;
+}
+
+.prep li.is-unchecked .prep__name,
+.prep li.is-unchecked .prep__unit {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+/* ------------------------------------------------- ingrediënten beheren */
+
+.ingredient-row__afdeling {
+  width: auto;
+  max-width: 11rem;
+  flex: none;
+}
+
+.list > li.ingredient-row.is-missing {
+  background: var(--amber-soft);
+  box-shadow: inset 4px 0 0 var(--amber);
+}
+
+@media (max-width: 420px) {
+  .ingredient-row .list-item {
+    flex-wrap: wrap;
+  }
+
+  .ingredient-row__afdeling {
+    order: 3;
+    max-width: none;
+    flex: 1 1 100%;
+  }
+}
+
+/* ------------------------------------------------------------ plattegrond */
+
+.shop-map-frame {
+  padding: 0.4rem;
+  overflow: hidden;
+}
+
+.shop-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Tijdens het tekenen mag de browser de vinger niet gebruiken om te scrollen. */
+.shop-map.is-drawing {
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.plan-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.95rem;
+}
+
+.plan-results li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
 }

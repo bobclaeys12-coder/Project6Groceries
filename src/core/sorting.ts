@@ -55,10 +55,16 @@ export function sortGroceryList(
     categoryId,
     name: categoryById.get(categoryId)?.name ?? UNKNOWN_CATEGORY,
     items: sectionItems.sort(byName),
-    unplaced: shop !== null && !routePosition.has(categoryId),
+    // Zonder (geldige) afdeling is niet "nog te plaatsen": daar valt in een
+    // winkel niets te plaatsen. Die sectie komt los helemaal onderaan.
+    unplaced: shop !== null && categoryById.has(categoryId) && !routePosition.has(categoryId),
   }))
 
   sections.sort((a, b) => {
+    const aKnown = categoryById.has(a.categoryId)
+    const bKnown = categoryById.has(b.categoryId)
+    if (aKnown !== bKnown) return aKnown ? -1 : 1
+
     // Afdelingen zonder plaats in de route belanden achteraan.
     if (a.unplaced !== b.unplaced) return a.unplaced ? 1 : -1
 

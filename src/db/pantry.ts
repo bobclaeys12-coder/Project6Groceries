@@ -1,5 +1,6 @@
 import { createRecord, deleteRecord, getRecord, listRecords, updateRecord } from './repo'
 import { addToGroceryList } from './grocery'
+import { ensureCatalogIngredient } from './ingredients'
 import type { AddResult } from './grocery'
 import { normalizeName } from '../core/ids'
 import { pantryAddition, pantryAdditions, stepAmount } from '../core/pantry'
@@ -34,11 +35,14 @@ export async function addPantryItem(input: PantryInput): Promise<PantryItem> {
   )
   if (existing) throw new Error(`${existing.name} staat al in je voorraad.`)
 
+  // Ook in de catalogus, zodat het in Instellingen → Ingrediënten staat.
+  const catalogItem = await ensureCatalogIngredient(name, input.categoryId, input.unit)
+
   return createRecord('pantryItems', {
     name,
     nameLower,
-    ingredientId: input.ingredientId,
-    categoryId: input.categoryId,
+    ingredientId: input.ingredientId ?? catalogItem.id,
+    categoryId: input.categoryId || catalogItem.categoryId,
     current: clean(input.current),
     target: clean(input.target),
     unit: input.unit,

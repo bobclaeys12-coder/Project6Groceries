@@ -8,6 +8,7 @@ import {
   deleteRecipeCategory,
   moveCategory,
   renameCategory,
+  setCategoryBasic,
 } from './categories'
 
 const FRUIT = ingredientCategoryId('fruit')
@@ -149,5 +150,18 @@ describe('categorieën beheren', () => {
     const raw = await db.recipeCategories.get(leeg.id)
     expect(raw?.deleted).toBe(1)
     expect(raw?.updatedAt).toBeGreaterThan(0)
+  })
+
+  it('markeert een afdeling als basis en weer terug, met een nieuwe stempel voor de sync', async () => {
+    const before = (await getRecord('ingredientCategories', FRUIT))!
+    expect(before.basic).toBeUndefined()
+
+    await setCategoryBasic(FRUIT, true)
+    const after = (await getRecord('ingredientCategories', FRUIT))!
+    expect(after.basic).toBe(1)
+    expect(after.updatedAt).toBeGreaterThan(before.updatedAt)
+
+    await setCategoryBasic(FRUIT, false)
+    expect((await getRecord('ingredientCategories', FRUIT))!.basic).toBe(0)
   })
 })
