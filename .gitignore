@@ -1,0 +1,16 @@
+node_modules
+dist
+dist-ssr
+dev-dist
+*.local
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+*.log
+coverage
+
+# tsc incremental build info
+*.tsbuildinfo
+
+# lokale werknotities, bevatten paden van deze pc
+HANDOVER.md

@@ -1,0 +1,206 @@
+/**
+ * Startcatalogus voor de autocomplete: ingrediënten die je in een Belgische
+ * supermarkt (Colruyt, Delhaize, Aldi, Lidl, Carrefour) tegenkomt.
+ *
+ * Formaat per regel: "Naam" of "Naam|eenheid". Zonder eenheid krijgt het
+ * ingrediënt de standaardeenheid van zijn afdeling (zie categories.ts).
+ * Je kunt zelf onbeperkt ingrediënten toevoegen; die komen hier niet bij,
+ * maar wel in de database.
+ */
+export const INGREDIENTS_BY_CATEGORY: Record<string, string[]> = {
+  groenten: [
+    'Ui|st', 'Rode ui|st', 'Sjalot|st', 'Look|teen', 'Prei|st', 'Wortelen',
+    'Witloof', 'Bloemkool|st', 'Broccoli|st', 'Spruitjes', 'Savooikool|st',
+    'Witte kool|st', 'Rode kool|st', 'Spitskool|st', 'Boerenkool', 'Courgette|st',
+    'Aubergine|st', 'Rode paprika|st', 'Groene paprika|st', 'Gele paprika|st',
+    'Tomaten|st', 'Kerstomaten', 'Trostomaten', 'Komkommer|st', 'Kropsla|st',
+    'IJsbergsla|st', 'Veldsla', 'Rucola', 'Spinazie', 'Andijvie', 'Selder|st',
+    'Bleekselder|st', 'Knolselder|st', 'Venkel|st', 'Champignons',
+    'Kastanjechampignons', 'Oesterzwammen', 'Groene bonen', 'Prinsessenbonen',
+    'Erwtjes', 'Asperges', 'Pompoen', 'Zoete aardappel', 'Rapen', 'Pastinaak',
+    'Radijzen|bussel', 'Maïskolf|st', 'Schorseneren', 'Paksoi|st', 'Little gem|st',
+    'Tuinbonen', 'Lente-ui|bussel', 'Gember', 'Rode peper|st', 'Avocado|st',
+    'Postelein', 'Warmoes',
+  ],
+  fruit: [
+    'Appels|st', 'Peren|st', 'Bananen|st', 'Sinaasappels|st', 'Mandarijnen|st',
+    'Citroen|st', 'Limoen|st', 'Druiven', 'Aardbeien', 'Frambozen', 'Bosbessen',
+    'Bramen', 'Kersen', 'Perzik|st', 'Nectarine|st', 'Abrikozen', 'Pruimen',
+    'Kiwi|st', 'Ananas|st', 'Mango|st', 'Meloen|st', 'Watermeloen|st',
+    'Pompelmoes|st', 'Rode bessen', 'Kruisbessen', 'Verse vijgen', 'Dadels',
+    'Rozijnen', 'Gedroogde abrikozen', 'Granaatappel|st', 'Passievrucht|st',
+    'Sharonfruit|st', 'Veenbessen', 'Rabarber', 'Blauwe bessen',
+  ],
+  aardappelen: [
+    'Aardappelen', 'Vastkokende aardappelen', 'Kruimige aardappelen',
+    'Krielaardappelen', 'Nieuwe aardappelen', 'Bintjes',
+  ],
+  'verse-kruiden': [
+    'Peterselie|bussel', 'Platte peterselie|bussel', 'Bieslook|bussel',
+    'Verse basilicum', 'Verse koriander|bussel', 'Verse munt', 'Verse tijm',
+    'Verse rozemarijn', 'Verse salie', 'Dille', 'Dragon', 'Laurierblad|st',
+    'Verse oregano', 'Kervel|bussel',
+  ],
+  vlees: [
+    'Gemengd gehakt', 'Rundergehakt', 'Varkensgehakt', 'Kalfsgehakt',
+    'Biefstuk|st', 'Entrecote|st', 'Rosbief', 'Stoofvlees', 'Rundstoofvlees',
+    'Kippenfilet|st', 'Kippenbout|st', 'Hele kip|st', 'Kippenvleugels',
+    'Kalkoenfilet', 'Varkenshaasje|st', 'Varkenskotelet|st', 'Spiering',
+    'Speklapjes', 'Lamsbout', 'Lamskoteletjes|st', 'Konijn', 'Braadworst|st',
+    'Chipolata|st', 'Merguez|st', 'Hamburger|st', 'Vol-au-vent vlees',
+    'Soepvlees', 'Eendenborst|st', 'Buikspek', 'Spekblokjes', 'Gerookt spek',
+    'Kalfszwezerik', 'Orloffgebraad|st',
+  ],
+  vis: [
+    'Zalmfilet|st', 'Kabeljauwfilet|st', 'Koolvis', 'Tong|st', 'Pangasius',
+    'Tilapia', 'Scholfilet', 'Verse tonijn', 'Gerookte zalm', 'Garnalen',
+    'Grijze garnalen', 'Scampi', 'Mosselen|kg', 'Kokkels', 'Inktvis',
+    'Calamares', 'Sint-jakobsschelpen|st', 'Krab', 'Zeewolf', 'Heilbot',
+    'Forel|st', 'Haring', 'Makreel', 'Ansjovis', 'Visfilet', 'Surimi',
+  ],
+  charcuterie: [
+    'Gekookte hesp', 'Gerookte hesp', 'Salami', 'Chorizo', 'Filet d’Anvers',
+    'Américain', 'Préparé', 'Kipfilet (vleeswaren)', 'Boterhamworst', 'Paté',
+    'Brusselse paté', 'Bloedworst', 'Witte pens', 'Zwarte pens', 'Droge worst',
+    'Bacon', 'Parmaham', 'Serranoham', 'Kalkoenfilet (vleeswaren)', 'Kopvlees',
+  ],
+  kaas: [
+    'Goudse kaas', 'Jong belegen kaas', 'Oude kaas', 'Brie', 'Camembert',
+    'Geitenkaas', 'Mozzarella|st', 'Parmezaanse kaas', 'Pecorino', 'Feta',
+    'Roquefort', 'Gorgonzola', 'Brugge kaas', 'Passendale', 'Chimay kaas',
+    'Herve', 'Maredsous', 'Port salut', 'Emmental', 'Gruyère', 'Cheddar',
+    'Smeerkaas', 'Ricotta', 'Mascarpone', 'Raclettekaas', 'Geraspte kaas',
+    'Kaasblokjes',
+  ],
+  zuivel: [
+    'Melk|l', 'Halfvolle melk|l', 'Volle melk|l', 'Magere melk|l',
+    'Karnemelk|l', 'Room', 'Slagroom', 'Kookroom', 'Zure room',
+    'Crème fraîche|g', 'Yoghurt|g', 'Griekse yoghurt|g', 'Platte kaas|g',
+    'Boter|g', 'Gezouten boter|g', 'Margarine|g', 'Chocolademelk|l',
+    'Sojamelk|l', 'Amandelmelk|l', 'Havermelk|l', 'Pudding|g', 'Rijstpap|g',
+    'Vanillevla|l', 'Kefir|l',
+  ],
+  eieren: ['Eieren', 'Scharreleieren', 'Bio-eieren', 'Kwarteleitjes'],
+  brood: [
+    'Wit brood|st', 'Bruin brood|st', 'Volkorenbrood|st', 'Grijs brood|st',
+    'Pistolets|st', 'Sandwiches|st', 'Stokbrood|st', 'Baguette|st',
+    'Pitabrood|st', 'Tortillawraps|pak', 'Toastbrood|st', 'Rozijnenbrood|st',
+    'Maïsbrood|st', 'Beschuit|pak', 'Croutons|g', 'Paneermeel|g',
+    'Hamburgerbroodjes|st', 'Boerenbrood|st',
+  ],
+  bakkerij: [
+    'Croissants|st', 'Chocoladebroodjes|st', 'Koffiekoeken|st', 'Appelflap|st',
+    'Éclair|st', 'Taart|st', 'Cake|st', 'Suikerwafels|st', 'Luikse wafels|st',
+    'Brusselse wafels|st', 'Speculaas|g', 'Peperkoek|st', 'Frangipane|st',
+    'Donut|st', 'Rijsttaart|st',
+  ],
+  'pasta-rijst': [
+    'Spaghetti', 'Penne', 'Fusilli', 'Macaroni', 'Tagliatelle',
+    'Lasagnebladen', 'Cannelloni', 'Farfalle', 'Orzo', 'Verse pasta', 'Rijst',
+    'Basmatirijst', 'Risottorijst', 'Zilvervliesrijst', 'Parboiled rijst',
+    'Couscous', 'Bulgur', 'Quinoa', 'Noedels', 'Mie', 'Rijstnoedels',
+    'Gnocchi', 'Polenta', 'Griesmeel', 'Spätzle',
+  ],
+  conserven: [
+    'Tomatenblokjes', 'Gepelde tomaten', 'Tomatenpuree', 'Passata|pak',
+    'Kikkererwten', 'Witte bonen', 'Rode kidneybonen', 'Bruine bonen',
+    'Linzen', 'Erwtjes en wortelen', 'Maïs', 'Tonijn in olie',
+    'Tonijn in water', 'Sardines', 'Makreel in tomatensaus', 'Ananas op sap',
+    'Perziken op sap', 'Appelmoes|pak', 'Champignons in blik', 'Kokosmelk',
+    'Runderbouillon', 'Kippenbouillon', 'Groentebouillon', 'Soep|blik',
+    'Augurken|pak', 'Zilveruitjes|pak', 'Kappertjes|pak',
+  ],
+  sauzen: [
+    'Mayonaise|g', 'Ketchup', 'Mosterd|g', 'Grove mosterd|g', 'Bicky saus',
+    'Cocktailsaus', 'Tartaarsaus', 'Béarnaisesaus', 'Pepersaus', 'Currysaus',
+    'Sojasaus', 'Worcestershiresaus', 'Tabasco', 'Sriracha', 'Balsamicoazijn',
+    'Witte azijn', 'Appelazijn', 'Olijfolie', 'Zonnebloemolie', 'Arachideolie',
+    'Sesamolie', 'Kokosolie|g', 'Vinaigrette', 'Groene pesto|g',
+    'Rode pesto|g', 'Tapenade|g', 'Hummus|g', 'Currypasta|g', 'Ketjap manis',
+    'Vissaus', 'Honing|g',
+  ],
+  specerijen: [
+    'Zout|g', 'Grof zout|g', 'Peper', 'Zwarte peper', 'Witte peper',
+    'Paprikapoeder', 'Currypoeder', 'Kurkuma', 'Komijn', 'Korianderpoeder',
+    'Kaneel', 'Nootmuskaat', 'Kruidnagel', 'Gemberpoeder', 'Kardemom',
+    'Laurier|st', 'Gedroogde tijm', 'Gedroogde oregano',
+    'Gedroogde rozemarijn', 'Gedroogde basilicum', 'Provençaalse kruiden',
+    'Italiaanse kruiden', 'Chilipoeder', 'Cayennepeper', 'Knoflookpoeder',
+    'Uienpoeder', 'Mosterdzaad', 'Sesamzaad', 'Venkelzaad', 'Saffraan',
+    'Vanillestokje|st', 'Bouillonblokje|st', 'Aromat|g', 'Lookzout|g',
+    'Ras el hanout', 'Garam masala', 'Vijfkruidenpoeder', 'Peperbolletjes|g',
+  ],
+  bakproducten: [
+    'Bloem', 'Zelfrijzende bloem', 'Patisseriebloem', 'Maïzena', 'Suiker',
+    'Kristalsuiker', 'Bruine suiker', 'Kandijsuiker', 'Poedersuiker',
+    'Vanillesuiker|pak', 'Bakpoeder|pak', 'Verse gist|pak', 'Droge gist|pak',
+    'Bakmix|pak', 'Cacaopoeder', 'Fondantchocolade', 'Melkchocolade',
+    'Witte chocolade', 'Chocoladedruppels', 'Amandelpoeder',
+    'Hazelnootpoeder', 'Gemalen noten', 'Kokosrasp', 'Gelatine|pak',
+    'Puddingpoeder|pak', 'Bladerdeeg|pak', 'Kruimeldeeg|pak', 'Pizzadeeg|pak',
+  ],
+  ontbijt: [
+    'Cornflakes', 'Muesli', 'Granola', 'Havermout', 'Rijstwafels|pak',
+    'Choco', 'Confituur', 'Aardbeienconfituur', 'Abrikozenconfituur',
+    'Luikse siroop', 'Pindakaas', 'Speculoospasta', 'Ontbijtgranen',
+    'Cruesli',
+  ],
+  snacks: [
+    'Chips', 'Zoute chips', 'Paprikachips', 'Nootjes', 'Pindanoten',
+    'Cashewnoten', 'Amandelen', 'Walnoten', 'Hazelnoten', 'Pistachenoten',
+    'Borrelnootjes', 'Popcorn', 'Zoutjes', 'Crackers', 'Grissini', 'Olijven',
+    'Tortillachips', 'Dipsaus',
+  ],
+  zoetwaren: [
+    'Chocoladereep', 'Pralines', 'Snoep', 'Winegums', 'Drop', 'Marsepein',
+    'Koekjes', 'Speculoos', 'Petit beurre', 'Chocolademousse',
+    'Kauwgom|pak', 'Nic-nacs', 'Cuberdons', 'Babelutten', 'Zuurtjes',
+  ],
+  diepvries: [
+    'Diepvriesgroenten', 'Diepvrieserwtjes', 'Diepvriesspinazie', 'Frieten',
+    'Kroketten|st', 'Aardappelblokjes', 'Diepvriespizza|st', 'Diepvriesvis',
+    'Vissticks|st', 'Garnaalkroketten|st', 'Kaaskroketten|st', 'Roomijs',
+    'Sorbet', 'Diepvriesfruit', 'Loempia|st', 'Diepvriesframbozen',
+  ],
+  dranken: [
+    'Cola', 'Cola zero', 'Limonade', 'Fruitsap', 'Sinaasappelsap', 'Appelsap',
+    'Ice tea', 'Spa fruit', 'Tonic', 'Ginger ale', 'Grenadinesiroop|ml',
+    'Smoothie', 'Energiedrank|st', 'Sportdrank',
+  ],
+  water: [
+    'Plat water', 'Bruiswater', 'Spa blauw', 'Spa bruis', 'Chaudfontaine',
+    'Bronwater',
+  ],
+  'wijn-bier': [
+    'Witte wijn', 'Rode wijn', 'Rosé', 'Cava', 'Champagne', 'Pils',
+    'Speciaalbier', 'Trappist', 'Witbier', 'Kriek', 'Geuze', 'Aperitief',
+    'Porto', 'Vermout', 'Bruin bier',
+  ],
+  'koffie-thee': [
+    'Koffie', 'Gemalen koffie', 'Koffiebonen', 'Koffiepads|pak',
+    'Koffiecapsules|pak', 'Oploskoffie', 'Thee|pak', 'Groene thee|pak',
+    'Kruidenthee|pak', 'Zwarte thee|pak', 'Cacao', 'Warme chocolademelk|pak',
+  ],
+  huishouden: [
+    'Afwasmiddel', 'Vaatwastabletten|pak', 'Wasmiddel', 'Wasverzachter',
+    'Allesreiniger', 'Bleekwater', 'Ontkalker', 'Vuilniszakken|pak',
+    'Aluminiumfolie', 'Vershoudfolie', 'Bakpapier', 'Keukenrol',
+    'Toiletpapier|pak', 'Spons', 'Schuurspons', 'Luchtverfrisser', 'Kaarsen',
+    'Batterijen|pak', 'Vaatdoeken|pak',
+  ],
+  hygiene: [
+    'Tandpasta', 'Tandenborstel', 'Mondwater', 'Shampoo', 'Douchegel', 'Zeep',
+    'Handzeep', 'Deodorant', 'Scheerschuim', 'Scheermesjes|pak', 'Bodylotion',
+    'Zonnecrème', 'Wattenstaafjes|pak', 'Zakdoekjes|pak', 'Maandverband|pak',
+    'Tampons|pak', 'Luiers|pak', 'Handgel',
+  ],
+  overig: [
+    'Hondenvoer|g', 'Kattenvoer|g', 'Bloemen|bussel', 'Plantenvoeding',
+    'Cadeaubon', 'Postzegels',
+  ],
+}
+
+export const INGREDIENT_COUNT = Object.values(INGREDIENTS_BY_CATEGORY).reduce(
+  (n, list) => n + list.length,
+  0,
+)
