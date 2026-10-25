@@ -19,6 +19,37 @@ export function isBasicCategory(categoryId: Id, categories: IngredientCategory[]
   return categories.some((c) => c.id === categoryId && c.basic === 1)
 }
 
+/**
+ * De drie groepen van een ingrediëntenlijst, in deze volgorde: gewone
+ * ingrediënten, dan die uit een basisafdeling, dan de optionele. Optioneel
+ * wint: een optioneel kruid staat bij de optionele.
+ */
+export type RecipeLineGroup = 'regular' | 'basic' | 'optional'
+
+export const RECIPE_LINE_GROUPS: RecipeLineGroup[] = ['regular', 'basic', 'optional']
+
+export function recipeLineGroup(
+  line: { categoryId: Id; optional?: 0 | 1 },
+  categories: IngredientCategory[],
+): RecipeLineGroup {
+  if (line.optional === 1) return 'optional'
+  return isBasicCategory(line.categoryId, categories) ? 'basic' : 'regular'
+}
+
+/**
+ * Zet de regels per groep (gewoon → basis → optioneel). Binnen een groep
+ * blijft je eigen volgorde staan. De groep wordt bij het tonen berekend, niet
+ * bewaard: maak je een afdeling later "basis", dan schuift alles vanzelf mee.
+ */
+export function orderRecipeLines<T extends { categoryId: Id; optional?: 0 | 1 }>(
+  lines: T[],
+  categories: IngredientCategory[],
+): T[] {
+  return RECIPE_LINE_GROUPS.flatMap((group) =>
+    lines.filter((line) => recipeLineGroup(line, categories) === group),
+  )
+}
+
 /** Het catalogusitem met exact deze naam (hoofdletters en spaties tellen niet). */
 export function findCatalogMatch(
   catalog: CatalogIngredient[],

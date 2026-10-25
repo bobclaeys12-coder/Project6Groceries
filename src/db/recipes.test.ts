@@ -57,6 +57,25 @@ describe('recepten bewaren', () => {
     expect(saved.ingredients.map((l) => l.name)).toEqual(['Ui'])
   })
 
+  it('onthoudt welke regels optioneel zijn', async () => {
+    const saved = await saveRecipe({
+      name: 'Test',
+      categoryId: PASTAS,
+      notes: '',
+      photo: null,
+      ingredients: [
+        line({ name: 'Ui', amount: 1, unit: 'st' }),
+        line({ name: 'Peterselie', amount: 1, unit: 'st', optional: 1 }),
+      ],
+      steps: [],
+    })
+    const stored = await getRecord('recipes', saved.id)
+    expect(stored?.ingredients.map((l) => [l.name, l.optional])).toEqual([
+      ['Ui', undefined],
+      ['Peterselie', 1],
+    ])
+  })
+
   it('koppelt een bekend ingrediënt aan de catalogus en telt het gebruik op', async () => {
     const before = await getRecord('ingredients', ingredientId('Wortelen'))
     expect(before?.usageCount).toBe(0)

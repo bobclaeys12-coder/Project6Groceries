@@ -5,7 +5,7 @@ import AfdelingSelect from '../../components/AfdelingSelect'
 import { useIngredientCatalog, useIngredientCategories } from '../../hooks/useData'
 import { addPreparedRecipeToGroceryList, type AddResult } from '../../db/grocery'
 import { newId } from '../../core/ids'
-import { findCatalogMatch, isBasicCategory, NO_CATEGORY } from '../../core/ingredients'
+import { findCatalogMatch, NO_CATEGORY, recipeLineGroup } from '../../core/ingredients'
 import { formatNumber, parseAmount } from '../../core/scaling'
 import { unitLabel } from '../../core/units'
 import type { PrepChoice, PrepExtra } from '../../core/prep'
@@ -59,12 +59,11 @@ export default function PrepareForList({ recipe, portions, scaled, onSent, onCan
   const [busy, setBusy] = useState(false)
 
   // Ingrediënten uit een basisafdeling (kruiden, olie, …) heb je meestal in
-  // huis; die staan standaard uitgevinkt, maar je kunt ze gewoon aanvinken.
-  const basicLines = new Set(
-    scaled.filter((line) => isBasicCategory(line.categoryId, categories)).map((l) => l.lineId),
-  )
+  // huis, en optionele zijn een keuze; die staan standaard uitgevinkt, maar
+  // je kunt ze gewoon aanvinken.
+  const groupOf = new Map(scaled.map((line) => [line.lineId, recipeLineGroup(line, categories)]))
   const lineState = (lineId: string): LineState =>
-    lines[lineId] ?? { checked: !basicLines.has(lineId) }
+    lines[lineId] ?? { checked: groupOf.get(lineId) === 'regular' }
   const setLine = (lineId: string, changes: Partial<LineState>) =>
     setLines((current) => ({ ...current, [lineId]: { ...lineState(lineId), ...changes } }))
 
@@ -120,8 +119,8 @@ export default function PrepareForList({ recipe, portions, scaled, onSent, onCan
     <div className="stack">
       <p className="small muted" style={{ margin: 0 }}>
         Vink uit wat je al in huis hebt, pas hoeveelheden aan en voeg toe wat je er deze keer
-        bij wilt. Ingrediënten uit een basisafdeling staan al uitgevinkt. Het recept zelf
-        blijft zoals het is.
+        bij wilt. Ingrediënten uit een basisafdeling en optionele ingrediënten staan al
+        uitgevinkt. Het recept zelf blijft zoals het is.
       </p>
 
       <ul className="list prep">
@@ -152,9 +151,14 @@ export default function PrepareForList({ recipe, portions, scaled, onSent, onCan
                   {line.name}
                   {line.note && <span className="ingredient-line__note"> — {line.note}</span>}
                 </span>
-                {basicLines.has(line.lineId) && (
+                {groupOf.get(line.lineId) === 'basic' && (
                   <span className="badge" title="Uit een basisafdeling: standaard uitgevinkt">
                     basis
+                  </span>
+                )}
+                {groupOf.get(line.lineId) === 'optional' && (
+                  <span className="badge badge--amber" title="Optioneel: standaard uitgevinkt">
+                    optioneel
                   </span>
                 )}
               </label>

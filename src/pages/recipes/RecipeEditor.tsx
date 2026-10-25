@@ -13,7 +13,14 @@ import {
 } from '../../hooks/useData'
 import { deleteRecipe, saveRecipe } from '../../db/recipes'
 import { newId } from '../../core/ids'
-import { findCatalogMatch, NO_CATEGORY } from '../../core/ingredients'
+import {
+  findCatalogMatch,
+  NO_CATEGORY,
+  orderRecipeLines,
+  RECIPE_LINE_GROUPS,
+  recipeLineGroup,
+  type RecipeLineGroup,
+} from '../../core/ingredients'
 import { BASE_PORTIONS, formatNumber, parseAmount } from '../../core/scaling'
 import { downscaleImage, formatFileSize } from '../../core/photo'
 import type { CatalogIngredient, Id, Unit } from '../../core/types'
@@ -26,6 +33,14 @@ interface EditorLine {
   amountText: string
   unit: Unit
   categoryId: Id
+  optional: 0 | 1
+}
+
+/** Tussentitels in de editor; gewone ingrediënten hebben er geen nodig. */
+const GROUP_TITLES: Record<RecipeLineGroup, string | null> = {
+  regular: null,
+  basic: 'Basis — standaard uitgevinkt bij klaarmaken',
+  optional: 'Optioneel — standaard uitgevinkt bij klaarmaken',
 }
 
 const emptyLine = (categoryId: Id): EditorLine => ({
@@ -35,6 +50,7 @@ const emptyLine = (categoryId: Id): EditorLine => ({
   amountText: '',
   unit: 'g',
   categoryId,
+  optional: 0,
 })
 
 export default function RecipeEditor() {
@@ -82,6 +98,7 @@ export default function RecipeEditor() {
         amountText: line.amount === null ? '' : formatNumber(line.amount),
         unit: line.unit,
         categoryId: line.categoryId,
+        optional: line.optional === 1 ? 1 : 0,
       })),
     )
   }, [existing, isNew])
@@ -115,13 +132,24 @@ export default function RecipeEditor() {
     })
   }
 
-  const moveLine = (index: number, direction: -1 | 1) => {
-    const target = index + direction
-    if (target < 0 || target >= lines.length) return
-    const next = [...lines]
-    const moved = next[index]!
-    next[index] = next[target]!
-    next[target] = moved
+  // Gewoon → basis → optioneel staat altijd vast; schuiven kan alleen binnen
+  // een groep. Verandert de afdeling of het vinkje, dan verhuist de regel mee.
+  const ordered = orderRecipeLines(lines, ingredientCategories)
+  const groupOf = (line: EditorLine) => recipeLineGroup(line, ingredientCategories)
+
+  const neighbour = (lineId: string, direction: -1 | 1) => {
+    const index = ordered.findIndex((line) => line.lineId === lineId)
+    const target = ordered[index + direction]
+    return target && groupOf(target) === groupOf(ordered[index]!) ? index + direction : null
+  }
+
+  const moveLine = (lineId: string, direction: -1 | 1) => {
+    const target = neighbour(lineId, direction)
+    if (target === null) return
+    const index = target - direction
+    const next = [...ordered]
+    next[index] = ordered[target]!
+    next[target] = ordered[index]!
     setLines(next)
   }
 
@@ -155,7 +183,7 @@ export default function RecipeEditor() {
       return
     }
 
-    const named = lines.filter((line) => line.name.trim())
+    const named = ordered.filter((line) => line.name.trim())
     const badAmount = named.find(
       (line) => line.amountText.trim() !== '' && parseAmount(line.amountText) === null,
     )
@@ -180,6 +208,7 @@ export default function RecipeEditor() {
           amount: parseAmount(line.amountText),
           unit: line.unit,
           categoryId: line.categoryId,
+          ...(line.optional === 1 ? { optional: 1 as const } : {}),
         })),
         steps,
       })
@@ -286,81 +315,112 @@ export default function RecipeEditor() {
         </span>
       </h2>
 
-      <ul className="list">
-        {lines.map((line, index) => (
-          <li key={line.lineId}>
-            <div className="editor-row">
-              <input
-                className="input editor-row__amount"
-                value={line.amountText}
-                placeholder="250"
-                inputMode="decimal"
-                aria-label="Hoeveelheid"
-                onChange={(event) => updateLine(line.lineId, { amountText: event.target.value })}
-              />
-              <UnitSelect
-                className="editor-row__unit"
-                value={line.unit}
-                onChange={(unit) => updateLine(line.lineId, { unit })}
-              />
-              <div className="editor-row__name">
-                <IngredientPicker
-                  value={line.name}
-                  catalog={catalog}
-                  onChange={(value) => {
-                    // Volledig uitgetypt in plaats van aangetikt? Dan kent de
-                    // catalogus de afdeling ook.
-                    const match = findCatalogMatch(catalog, value)
-                    updateLine(
-                      line.lineId,
-                      match
-                        ? { name: value, ingredientId: match.id, categoryId: match.categoryId }
-                        : { name: value, ingredientId: null },
-                    )
-                  }}
-                  onPick={(item) => pickIngredient(line.lineId, item)}
-                />
-              </div>
-              <AfdelingSelect
-                className="editor-row__category"
-                value={line.categoryId}
-                categories={ingredientCategories}
-                onChange={(categoryId) => updateLine(line.lineId, { categoryId })}
-              />
-              <div className="row editor-row__remove">
-                <button
-                  type="button"
-                  className="btn btn--small btn--ghost btn--icon"
-                  onClick={() => moveLine(index, -1)}
-                  disabled={index === 0}
-                  aria-label="Regel omhoog"
-                >
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--small btn--ghost btn--icon"
-                  onClick={() => moveLine(index, 1)}
-                  disabled={index === lines.length - 1}
-                  aria-label="Regel omlaag"
-                >
-                  ↓
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--small btn--ghost btn--icon"
-                  onClick={() =>
-                    setLines((current) => current.filter((l) => l.lineId !== line.lineId))
-                  }
-                  aria-label={`${line.name || 'Regel'} verwijderen`}
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
+      {RECIPE_LINE_GROUPS.map((group) => {
+        const groupLines = ordered.filter((line) => groupOf(line) === group)
+        if (groupLines.length === 0) return null
+        const title = GROUP_TITLES[group]
+        return (
+          <section key={group} className="stack stack--tight">
+            {title && <h3 className="section-title">{title}</h3>}
+            <ul className="list">
+              {groupLines.map((line) => (
+                <li key={line.lineId}>
+                  <div className="editor-row">
+                    <div className="editor-row__move">
+                      <button
+                        type="button"
+                        className="btn btn--small btn--ghost btn--icon"
+                        onClick={() => moveLine(line.lineId, -1)}
+                        disabled={neighbour(line.lineId, -1) === null}
+                        aria-label="Regel omhoog"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--small btn--ghost btn--icon"
+                        onClick={() => moveLine(line.lineId, 1)}
+                        disabled={neighbour(line.lineId, 1) === null}
+                        aria-label="Regel omlaag"
+                      >
+                        ↓
+                      </button>
+                    </div>
+                    <div className="editor-row__name">
+                      <IngredientPicker
+                        value={line.name}
+                        catalog={catalog}
+                        onChange={(value) => {
+                          // Volledig uitgetypt in plaats van aangetikt? Dan kent de
+                          // catalogus de afdeling ook, en zolang er nog geen
+                          // hoeveelheid staat ook de gebruikelijke eenheid.
+                          const match = findCatalogMatch(catalog, value)
+                          updateLine(
+                            line.lineId,
+                            match
+                              ? {
+                                  name: value,
+                                  ingredientId: match.id,
+                                  categoryId: match.categoryId,
+                                  ...(line.amountText.trim() ? {} : { unit: match.defaultUnit }),
+                                }
+                              : { name: value, ingredientId: null },
+                          )
+                        }}
+                        onPick={(item) => pickIngredient(line.lineId, item)}
+                      />
+                    </div>
+                    <input
+                      className="input editor-row__amount"
+                      value={line.amountText}
+                      placeholder="250"
+                      inputMode="decimal"
+                      aria-label="Hoeveelheid"
+                      onChange={(event) =>
+                        updateLine(line.lineId, { amountText: event.target.value })
+                      }
+                    />
+                    <UnitSelect
+                      className="editor-row__unit"
+                      value={line.unit}
+                      onChange={(unit) => updateLine(line.lineId, { unit })}
+                    />
+                    <AfdelingSelect
+                      className="editor-row__category"
+                      value={line.categoryId}
+                      categories={ingredientCategories}
+                      onChange={(categoryId) => updateLine(line.lineId, { categoryId })}
+                    />
+                    <label
+                      className={`editor-row__optional ${line.optional === 1 ? 'is-on' : ''}`}
+                      title="Optioneel: staat bij het klaarmaken standaard uitgevinkt"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={line.optional === 1}
+                        onChange={(event) =>
+                          updateLine(line.lineId, { optional: event.target.checked ? 1 : 0 })
+                        }
+                      />
+                      Optioneel
+                    </label>
+                    <button
+                      type="button"
+                      className="btn btn--small btn--ghost btn--icon editor-row__remove"
+                      onClick={() =>
+                        setLines((current) => current.filter((l) => l.lineId !== line.lineId))
+                      }
+                      aria-label={`${line.name || 'Regel'} verwijderen`}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      })}
 
       <button
         type="button"
@@ -371,7 +431,8 @@ export default function RecipeEditor() {
       </button>
       <p className="tiny muted" style={{ marginTop: '-0.25rem' }}>
         Typ je iets dat nog niet bestaat, dan verschijnt er “nieuw”. Kies de juiste afdeling; het
-        ingrediënt wordt bij het bewaren aan de catalogus toegevoegd.
+        ingrediënt wordt bij het bewaren aan de catalogus toegevoegd. Ingrediënten uit een
+        basisafdeling en optionele ingrediënten schuiven vanzelf naar onder.
       </p>
 
       <h2 className="section-title">Bereiding</h2>

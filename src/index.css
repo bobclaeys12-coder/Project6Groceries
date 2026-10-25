@@ -829,15 +829,30 @@ button.list-item {
 
 /* ------------------------------------------------------------ editor */
 
+/* De ↑/↓-knoppen staan in een eigen strook links, ver van de afdelingskeuze
+   rechts, zodat je ze niet per ongeluk raakt. */
 .editor-row {
   display: grid;
   gap: 0.5rem;
-  padding: 0.75rem 0.9rem;
-  grid-template-columns: 5rem 6.5rem auto;
+  padding: 0.75rem 0.9rem 0.75rem 0.4rem;
+  grid-template-columns: 2.4rem 5rem minmax(0, 1fr) auto;
   grid-template-areas:
-    'amount unit remove'
-    'name name name'
-    'category category category';
+    'move name name remove'
+    'move amount unit unit'
+    'move category category optional';
+}
+
+.editor-row__move {
+  grid-area: move;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding-right: 0.35rem;
+  border-right: 1px solid var(--border);
+}
+.editor-row__move .btn--icon {
+  min-width: 36px;
 }
 
 .editor-row__amount {
@@ -858,11 +873,43 @@ button.list-item {
   justify-self: end;
 }
 
+.editor-row__optional {
+  grid-area: optional;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.6rem;
+  min-height: var(--tap);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.editor-row__optional.is-on {
+  border-color: var(--amber);
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-weight: 600;
+}
+
 @media (min-width: 720px) {
   .editor-row {
-    grid-template-columns: 5rem 7rem minmax(0, 1fr) minmax(0, 11rem) var(--tap);
-    grid-template-areas: 'amount unit name category remove';
+    grid-template-columns: 2.4rem minmax(0, 1fr) 5rem 7rem minmax(0, 11rem) auto var(--tap);
+    grid-template-areas: 'move name amount unit category optional remove';
     align-items: center;
+  }
+  /* Op een breed scherm is de regel één knop hoog: ↑ en ↓ dan naast elkaar. */
+  .editor-row__move {
+    flex-direction: row;
+    gap: 0.1rem;
+  }
+  .editor-row__move .btn--icon {
+    min-width: 0;
+    width: 1.1rem;
+    padding: 0;
   }
 }
 
@@ -906,14 +953,8 @@ button.list-item {
   }
 }
 
-/* Drie icoonknoppen naast elkaar passen niet op een telefoon met de volle
-   tapbreedte; binnen een editorregel mogen ze wat smaller. */
-.editor-row__remove .btn--icon {
+.editor-row__remove.btn--icon {
   min-width: 36px;
-}
-
-.editor-row__remove {
-  gap: 0.15rem;
 }
 
 /* ------------------------------------------------- boodschappenlijst */

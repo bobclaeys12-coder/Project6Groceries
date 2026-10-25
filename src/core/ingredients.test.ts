@@ -5,7 +5,9 @@ import {
   hasCategory,
   isBasicCategory,
   NO_CATEGORY,
+  orderRecipeLines,
   queryIngredients,
+  recipeLineGroup,
 } from './ingredients'
 import type { CatalogIngredient, IngredientCategory } from './types'
 
@@ -91,5 +93,47 @@ describe('basisafdeling', () => {
     expect(isBasicCategory('specerijen', categories)).toBe(true)
     expect(isBasicCategory('groenten', categories)).toBe(false)
     expect(isBasicCategory(NO_CATEGORY, categories)).toBe(false)
+  })
+})
+
+describe('recipe line groups', () => {
+  const categories = [cat('groenten', 1), { ...cat('kruiden', 2), basic: 1 as const }]
+  const line = (name: string, categoryId: string, optional?: 0 | 1) => ({
+    name,
+    categoryId,
+    ...(optional === undefined ? {} : { optional }),
+  })
+
+  it('sorts each line into its group; optional wins over basic', () => {
+    expect(recipeLineGroup(line('ui', 'groenten'), categories)).toBe('regular')
+    expect(recipeLineGroup(line('peper', 'kruiden'), categories)).toBe('basic')
+    expect(recipeLineGroup(line('peterselie', 'groenten', 1), categories)).toBe('optional')
+    // optioneel wint van basis
+    expect(recipeLineGroup(line('chili', 'kruiden', 1), categories)).toBe('optional')
+    expect(recipeLineGroup(line('ui', 'groenten', 0), categories)).toBe('regular')
+  })
+
+  it('orders regular, then basic, then optional, keeping your order within a group', () => {
+    const lines = [
+      line('peper', 'kruiden'),
+      line('chili', 'groenten', 1),
+      line('ui', 'groenten'),
+      line('zout', 'kruiden'),
+      line('wortel', 'groenten'),
+      line('room', NO_CATEGORY, 1),
+    ]
+    expect(orderRecipeLines(lines, categories).map((l) => l.name)).toEqual([
+      'ui',
+      'wortel',
+      'peper',
+      'zout',
+      'chili',
+      'room',
+    ])
+  })
+
+  it('treats lines without a known afdeling as regular', () => {
+    expect(recipeLineGroup(line('x', NO_CATEGORY), categories)).toBe('regular')
+    expect(recipeLineGroup(line('x', 'verdwenen'), categories)).toBe('regular')
   })
 })

@@ -3,7 +3,9 @@ import { Link, useParams } from 'react-router-dom'
 import { usePageHeader } from '../../components/AppLayout'
 import { useObjectUrl } from '../../hooks/useObjectUrl'
 import PrepareForList from './PrepareForList'
-import { useRecipe, useRecipeCategories } from '../../hooks/useData'
+import { useIngredientCategories, useRecipe, useRecipeCategories } from '../../hooks/useData'
+import { orderRecipeLines, RECIPE_LINE_GROUPS, recipeLineGroup } from '../../core/ingredients'
+import type { RecipeLineGroup } from '../../core/ingredients'
 import {
   BASE_PORTIONS,
   MAX_PORTIONS,
@@ -14,10 +16,17 @@ import {
 
 const PRESETS = [2, 4, 6, 8]
 
+const GROUP_TITLES: Record<RecipeLineGroup, string | null> = {
+  regular: null,
+  basic: 'Basis',
+  optional: 'Optioneel',
+}
+
 export default function RecipeDetail() {
   const { id } = useParams<{ id: string }>()
   const recipe = useRecipe(id)
   const categories = useRecipeCategories()
+  const ingredientCategories = useIngredientCategories()
   const [portions, setPortions] = useState(BASE_PORTIONS)
   const [addResult, setAddResult] = useState<{ added: number; merged: number } | null>(null)
   // Pas na "Klaarmaken" kun je iets op de lijst zetten.
@@ -26,9 +35,16 @@ export default function RecipeDetail() {
   usePageHeader(recipe?.name ?? 'Recept')
   const photoUrl = useObjectUrl(recipe?.photo)
 
+  // Gewoon → basis → optioneel, altijd bij het tonen berekend.
   const scaled = useMemo(
-    () => (recipe ? scaleIngredients(recipe.ingredients, portions, recipe.basePortions) : []),
-    [recipe, portions],
+    () =>
+      recipe
+        ? orderRecipeLines(
+            scaleIngredients(recipe.ingredients, portions, recipe.basePortions),
+            ingredientCategories,
+          )
+        : [],
+    [recipe, portions, ingredientCategories],
   )
 
   if (recipe === undefined) {
@@ -156,21 +172,38 @@ export default function RecipeDetail() {
           onCancel={() => setPreparing(false)}
         />
       ) : (
-      <ul className="list">
-        {scaled.map((line) => (
-          <li key={line.lineId}>
-            <div className="ingredient-line">
-              <span className="ingredient-line__amount">
-                {formatAmount(line.displayAmount, line.displayUnit)}
-              </span>
-              <span className="ingredient-line__name">
-                {line.name}
-                {line.note && <span className="ingredient-line__note"> — {line.note}</span>}
-              </span>
-            </div>
-          </li>
-        ))}
-      </ul>
+        RECIPE_LINE_GROUPS.map((group) => {
+          const groupLines = scaled.filter(
+            (line) => recipeLineGroup(line, ingredientCategories) === group,
+          )
+          if (groupLines.length === 0) return null
+          const title = GROUP_TITLES[group]
+          return (
+            <section key={group} className="stack stack--tight">
+              {title && <h3 className="section-title">{title}</h3>}
+              <ul className="list">
+                {groupLines.map((line) => (
+                  <li key={line.lineId}>
+                    <div className="ingredient-line">
+                      <span className="ingredient-line__amount">
+                        {formatAmount(line.displayAmount, line.displayUnit)}
+                      </span>
+                      <span className="ingredient-line__name">
+                        {line.name}
+                        {line.note && (
+                          <span className="ingredient-line__note"> — {line.note}</span>
+                        )}
+                      </span>
+                      {group === 'optional' && (
+                        <span className="badge badge--amber">optioneel</span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        })
       )}
       <p className="tiny muted">
         Ingevoerd voor {recipe.basePortions} personen; hoeveelheden schalen mee en worden

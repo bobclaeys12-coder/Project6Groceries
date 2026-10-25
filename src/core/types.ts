@@ -74,6 +74,8 @@ export interface RecipeIngredient {
   unit: Unit
   categoryId: Id
   note?: string
+  /** optioneel: staat bij het klaarmaken standaard uitgevinkt */
+  optional?: 0 | 1
 }
 
 export interface Recipe extends SyncedRecord {
